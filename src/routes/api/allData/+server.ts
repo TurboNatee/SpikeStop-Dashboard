@@ -1,4 +1,4 @@
-import { InfluxDBClient, Point } from '@influxdata/influxdb3-client';
+import { InfluxDBClient } from '@influxdata/influxdb3-client';
 import { json } from '@sveltejs/kit';
 import {
   INFLUX_URL,
@@ -82,7 +82,7 @@ async function fetchSensorData() {
   return reduced;
 }
 
-// Check variance & write alerts (true if Δ > 50, false otherwise)
+// Read active alerts from InfluxDB esp32s create alerts now.
 async function checkAndWriteAlerts(sensorData: Record<string, any>) {
   const alertClient = new InfluxDBClient({
     host: INFLUX_URL,
@@ -90,42 +90,27 @@ async function checkAndWriteAlerts(sensorData: Record<string, any>) {
   });
 
   const activeAlerts: Record<string, any> = {};
-  const alertPoints: Point[] = [];
 
   try {
-    for (const mac of Object.keys(sensorData)) {
-      const data = sensorData[mac];
-      const { avg, sensor_value, readings } = data;
+    const query = `
+      SELECT node, delta, active, time
+      FROM "alert"
+      WHERE active == true AND time >= now() - interval '10 minutes'
+      ORDER BY node, time DESC
+    `;
 
-      const deltas = readings.map((v: number) => Math.abs(v - avg));
-      const maxDelta = Math.max(...deltas);
-
-      const point = Point.measurement('alert')
-        .setTag('node', mac)
-        .setTag('type', 'turbidity_variance')
-        .setFloatField('delta', maxDelta)
-        .setFloatField('avg', avg)
-        .setFloatField('latest', sensor_value)
-        .setBooleanField('active', maxDelta > 50)
-        .setTimestamp(new Date());
-
-      alertPoints.push(point);
-
-      activeAlerts[mac] = {
-        delta: maxDelta,
-        active: maxDelta > 50,
-        _time: new Date().toISOString()
-      };
-
-      console.log(
-        `${maxDelta > 50 ? 'Alert triggered' : 'Cleared alert'} for ${mac}: Δ=${maxDelta.toFixed(2)}`
-      );
+    for await (const row of alertClient.query(query, INFLUX_ALERTS_DB)) {
+      const mac = row.node;
+      if (!activeAlerts[mac]) {
+        activeAlerts[mac] = {
+          delta: Number(row.delta),
+          active: row.active === 'true' || row.active === true,
+          _time: row.time
+        };
+      }
     }
 
-    if (alertPoints.length > 0) {
-      await alertClient.write(alertPoints, INFLUX_ALERTS_DB);
-      console.log(`Wrote ${alertPoints.length} alert updates to InfluxDB`);
-    }
+    console.log(`Found ${Object.keys(activeAlerts).length} active alerts from ESP32 devices`);
   } finally {
     await alertClient.close();
   }
