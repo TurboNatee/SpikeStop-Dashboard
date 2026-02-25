@@ -59,7 +59,7 @@ async function fetchSensorData() {
 
   const reduced: Record<string, any> = {};
   for (const mac of Object.keys(latest)) {
-    const readings = latest[mac].slice(0, 10);
+    const readings = latest[mac].slice(0, 30);
     if (readings.length === 0) continue;
 
     const values = readings.map((r) => r.sensor_value);
