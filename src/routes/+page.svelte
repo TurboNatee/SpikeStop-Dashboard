@@ -38,7 +38,7 @@
 
   onMount(() => {
     fetchData();
-    pollInterval = setInterval(fetchData, 6000);
+    pollInterval = setInterval(fetchData, 3000);
   });
 
   onDestroy(() => clearInterval(pollInterval));
