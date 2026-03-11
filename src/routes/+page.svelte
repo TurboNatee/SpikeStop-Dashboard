@@ -4,6 +4,10 @@
   interface NodeData {
     sensor_value: number;
     temperature: number;
+    battery_v: number;
+    battery_pct: number;
+    ir_signal_mv: number;
+    ir_broken: number;
     rssi: number;
     hops: number;
     _time: string;
@@ -21,6 +25,39 @@
   let loading = true;
   let lastUpdate = '';
   let pollInterval: ReturnType<typeof setInterval>;
+  let resetting: Record<string, boolean> = {};
+  let sharingMode: Record<string, boolean> = {};
+  let toastMessage = '';
+  let toastType: 'success' | 'error' = 'success';
+  let toastTimeout: ReturnType<typeof setTimeout> | undefined;
+
+  function formatBatteryPct(value: number) {
+    return value === -1 ? 'N/A' : `${value}%`;
+  }
+
+  function formatIrSignal(value: number) {
+    return value === -999 ? 'N/A' : `${value} mV`;
+  }
+
+  function formatIrState(value: number) {
+    if (value === 0) return 'CLEAR';
+    if (value === 1) return 'BROKEN';
+    return 'N/A';
+  }
+
+  function formatBatteryVoltage(value: number) {
+    return `${value.toFixed(2)} V`;
+  }
+
+  function showToast(message: string, type: 'success' | 'error' = 'success') {
+    toastMessage = message;
+    toastType = type;
+
+    if (toastTimeout) clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => {
+      toastMessage = '';
+    }, 3000);
+  }
 
   async function fetchData() {
     try {
@@ -36,6 +73,66 @@
     }
   }
 
+  async function resetCup(node: string) {
+    const confirmed = window.confirm(
+      'Are you sure you want to factory reset this cup? This will erase stored provisioning and Wi‑Fi credentials.'
+    );
+
+    if (!confirmed) return;
+
+    resetting[node] = true;
+
+    try {
+      const res = await fetch('/api/resetCup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ node })
+      });
+
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        throw new Error(payload.error ?? 'Failed to reset cup');
+      }
+
+      showToast(`Reset command sent for ${node}`, 'success');
+    } catch (error) {
+      console.error('Reset cup failed:', error);
+      showToast('Failed to send reset command for this cup.', 'error');
+    } finally {
+      resetting[node] = false;
+    }
+  }
+
+  async function sendShareMode(node: string) {
+    const confirmed = window.confirm(
+      'Enable sharing mode for this cup? This allows provisioning share mode to be toggled remotely.'
+    );
+
+    if (!confirmed) return;
+
+    sharingMode[node] = true;
+
+    try {
+      const res = await fetch('/api/shareMode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ node })
+      });
+
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        throw new Error(payload.error ?? 'Failed to send share mode command');
+      }
+
+      showToast(`Share mode command sent for ${node}`, 'success');
+    } catch (error) {
+      console.error('Share mode failed:', error);
+      showToast('Failed to send share mode command for this cup.', 'error');
+    } finally {
+      sharingMode[node] = false;
+    }
+  }
+
   onMount(() => {
     fetchData();
     pollInterval = setInterval(fetchData, 3000);
@@ -43,6 +140,14 @@
 
   onDestroy(() => clearInterval(pollInterval));
 </script>
+
+{#if toastMessage}
+  <div class="fixed right-4 top-4 z-50 rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-lg"
+       class:bg-emerald-600={toastType === 'success'}
+       class:bg-red-600={toastType === 'error'}>
+    {toastMessage}
+  </div>
+{/if}
 
 <div class="min-h-screen bg-gradient-to-br from-sky-100 via-blue-200 to-indigo-300 flex flex-col items-center px-6 py-10">
 
@@ -111,6 +216,26 @@
                 {nodeData[mac].variance.toFixed(1)}
               </p>
             </div>
+
+            <div class="bg-amber-50/60 rounded-xl py-2">
+              <p class="text-xs text-gray-500"> Battery V</p>
+              <p class="font-semibold text-amber-600">{formatBatteryVoltage(nodeData[mac].battery_v)}</p>
+            </div>
+
+            <div class="bg-amber-50/60 rounded-xl py-2">
+              <p class="text-xs text-gray-500"> Battery %</p>
+              <p class="font-semibold text-amber-600">{formatBatteryPct(nodeData[mac].battery_pct)}</p>
+            </div>
+
+            <div class="bg-cyan-50/60 rounded-xl py-2">
+              <p class="text-xs text-gray-500"> IR Signal</p>
+              <p class="font-semibold text-cyan-600">{formatIrSignal(nodeData[mac].ir_signal_mv)}</p>
+            </div>
+
+            <div class="bg-cyan-50/60 rounded-xl py-2">
+              <p class="text-xs text-gray-500"> IR State</p>
+              <p class="font-semibold text-cyan-600">{formatIrState(nodeData[mac].ir_broken)}</p>
+            </div>
           </div>
 
           <!-- Bottom Info -->
@@ -118,6 +243,22 @@
             <span> {nodeData[mac].rssi} dB</span>
             <span> {nodeData[mac].hops} hops</span>
           </div>
+
+          <button
+            class="mt-4 w-full rounded-xl bg-red-600 py-2 text-sm font-semibold text-white shadow transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-red-400"
+            on:click={() => resetCup(mac)}
+            disabled={!!resetting[mac]}
+          >
+            {resetting[mac] ? 'Resetting...' : 'Reset Cup'}
+          </button>
+
+          <button
+            class="mt-2 w-full rounded-xl bg-red-600 py-2 text-sm font-semibold text-white shadow transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-red-400"
+            on:click={() => sendShareMode(mac)}
+            disabled={!!sharingMode[mac]}
+          >
+            {sharingMode[mac] ? 'Sending...' : 'Share Mode'}
+          </button>
 
           <!-- Active Alert Glow styling --> 
 

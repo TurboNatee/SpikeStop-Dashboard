@@ -27,7 +27,7 @@ export async function GET() {
 // Fetch last 10 readings per node and compute variance
 async function fetchSensorData() {
   const query = `
-    SELECT node, sensor_value, temperature, rssi, hops, time
+    SELECT node, sensor_value, temperature, battery_v, battery_pct, ir_signal_mv, ir_broken, rssi, hops, time
     FROM "mesh_sensor"
     WHERE time >= now() - interval '2 minutes'
     ORDER BY node, time DESC
@@ -46,6 +46,10 @@ async function fetchSensorData() {
         node: row.node,
         sensor_value: Number(row.sensor_value),
         temperature: Number(row.temperature),
+        battery_v: Number(row.battery_v),
+        battery_pct: Number(row.battery_pct),
+        ir_signal_mv: Number(row.ir_signal_mv),
+        ir_broken: Number(row.ir_broken),
         rssi: Number(row.rssi),
         hops: Number(row.hops),
         time: row.time
@@ -70,6 +74,10 @@ async function fetchSensorData() {
     reduced[mac] = {
       sensor_value: latestVal,
       temperature: readings[0].temperature,
+      battery_v: readings[0].battery_v,
+      battery_pct: readings[0].battery_pct,
+      ir_signal_mv: readings[0].ir_signal_mv,
+      ir_broken: readings[0].ir_broken,
       rssi: readings[0].rssi,
       hops: readings[0].hops,
       _time: readings[0].time,
