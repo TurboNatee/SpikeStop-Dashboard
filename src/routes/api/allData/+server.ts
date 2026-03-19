@@ -8,6 +8,11 @@ import {
   INFLUX_ALERTS_DB
 } from '$env/static/private';
 
+function toFiniteNumber(value: unknown): number | null {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 export async function GET() {
   try {
     const sensorData = await fetchSensorData();
@@ -27,7 +32,7 @@ export async function GET() {
 // Fetch last 10 readings per node and compute variance
 async function fetchSensorData() {
   const query = `
-    SELECT node, sensor_value, temperature, battery_v, battery_pct, ir_signal_mv, ir_broken, rssi, hops, time
+    SELECT node, sensor_value, temperature, battery_v, battery_pct, ir_signal_uv, ir_signal_mv, ir_broken, rssi, hops, time
     FROM "mesh_sensor"
     WHERE time >= now() - interval '2 minutes'
     ORDER BY node, time DESC
@@ -42,13 +47,20 @@ async function fetchSensorData() {
 
   try {
     for await (const row of client.query(query, INFLUX_SENSOR_DB)) {
+      const irSignalUv = toFiniteNumber((row as Record<string, unknown>).ir_signal_uv);
+      const irSignalMv = toFiniteNumber(row.ir_signal_mv);
+      const irSignalUvNormalized = irSignalUv ?? (irSignalMv !== null ? irSignalMv * 1000 : null);
+
       const entry = {
         node: row.node,
         sensor_value: Number(row.sensor_value),
         temperature: Number(row.temperature),
         battery_v: Number(row.battery_v),
         battery_pct: Number(row.battery_pct),
-        ir_signal_mv: Number(row.ir_signal_mv),
+        ir_signal_uv: irSignalUv,
+        ir_signal_uv_normalized: irSignalUvNormalized,
+        ir_signal_mv: irSignalMv,
+        ir_signal_mv_precise: irSignalUvNormalized !== null ? irSignalUvNormalized / 1000 : null,
         ir_broken: Number(row.ir_broken),
         rssi: Number(row.rssi),
         hops: Number(row.hops),
@@ -76,7 +88,10 @@ async function fetchSensorData() {
       temperature: readings[0].temperature,
       battery_v: readings[0].battery_v,
       battery_pct: readings[0].battery_pct,
+      ir_signal_uv: readings[0].ir_signal_uv,
+      ir_signal_uv_normalized: readings[0].ir_signal_uv_normalized,
       ir_signal_mv: readings[0].ir_signal_mv,
+      ir_signal_mv_precise: readings[0].ir_signal_mv_precise,
       ir_broken: readings[0].ir_broken,
       rssi: readings[0].rssi,
       hops: readings[0].hops,

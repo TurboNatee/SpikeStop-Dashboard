@@ -6,8 +6,11 @@
     temperature: number;
     battery_v: number;
     battery_pct: number;
-    ir_signal_mv: number;
-    ir_broken: number;
+    ir_signal_uv?: number | null;
+    ir_signal_uv_normalized?: number | null;
+    ir_signal_mv: number | null;
+    ir_signal_mv_precise?: number | null;
+    ir_broken: number | null;
     rssi: number;
     hops: number;
     _time: string;
@@ -35,11 +38,30 @@
     return value === -1 ? 'N/A' : `${value}%`;
   }
 
-  function formatIrSignal(value: number) {
-    return value === -999 ? 'N/A' : `${value} mV`;
+  function normalizeIrSignalUv(data: NodeData) {
+    if (typeof data.ir_signal_uv === 'number' && Number.isFinite(data.ir_signal_uv)) {
+      return data.ir_signal_uv;
+    }
+
+    if (typeof data.ir_signal_uv_normalized === 'number' && Number.isFinite(data.ir_signal_uv_normalized)) {
+      return data.ir_signal_uv_normalized;
+    }
+
+    if (typeof data.ir_signal_mv === 'number' && Number.isFinite(data.ir_signal_mv)) {
+      return data.ir_signal_mv * 1000;
+    }
+
+    return null;
   }
 
-  function formatIrState(value: number) {
+  function formatIrSignalMv(data: NodeData) {
+    const normalizedUv = normalizeIrSignalUv(data);
+    if (normalizedUv === null) return 'N/A';
+
+    return `${(normalizedUv / 1000).toFixed(3)} mV`;
+  }
+
+  function formatIrState(value: number | null | undefined) {
     if (value === 0) return 'CLEAR';
     if (value === 1) return 'BROKEN';
     return 'N/A';
@@ -229,7 +251,7 @@
 
             <div class="bg-cyan-50/60 rounded-xl py-2">
               <p class="text-xs text-gray-500"> IR Signal</p>
-              <p class="font-semibold text-cyan-600">{formatIrSignal(nodeData[mac].ir_signal_mv)}</p>
+              <p class="font-semibold text-cyan-600">{formatIrSignalMv(nodeData[mac])}</p>
             </div>
 
             <div class="bg-cyan-50/60 rounded-xl py-2">
