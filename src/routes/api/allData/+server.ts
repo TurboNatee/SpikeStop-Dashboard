@@ -105,7 +105,7 @@ async function fetchSensorData() {
   return reduced;
 }
 
-// Check variance & write alerts (true if Δ > 50, false otherwise)
+// Check variance & write alerts (true if Δ >= 65, false otherwise)
 async function checkAndWriteAlerts(sensorData: Record<string, any>) {
   const alertClient = new InfluxDBClient({
     host: INFLUX_URL,
@@ -129,19 +129,19 @@ async function checkAndWriteAlerts(sensorData: Record<string, any>) {
         .setFloatField('delta', maxDelta)
         .setFloatField('avg', avg)
         .setFloatField('latest', sensor_value)
-        .setBooleanField('active', maxDelta > 50)
+        .setBooleanField('active', maxDelta >= 65)
         .setTimestamp(new Date());
 
       alertPoints.push(point);
 
       activeAlerts[mac] = {
         delta: maxDelta,
-        active: maxDelta > 50,
+        active: maxDelta >= 65,
         _time: new Date().toISOString()
       };
 
       console.log(
-        `${maxDelta > 50 ? 'Alert triggered' : 'Cleared alert'} for ${mac}: Δ=${maxDelta.toFixed(2)}`
+        `${maxDelta >= 65 ? 'Alert triggered' : 'Cleared alert'} for ${mac}: Δ=${maxDelta.toFixed(2)}`
       );
     }
 
