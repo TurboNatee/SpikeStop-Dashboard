@@ -9,6 +9,13 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    env:
+      INFLUX_URL: ${{ secrets.INFLUX_URL }}
+      INFLUX_SENSOR_TOKEN: ${{ secrets.INFLUX_SENSOR_TOKEN }}
+      INFLUX_ALERTS_TOKEN: ${{ secrets.INFLUX_ALERTS_TOKEN }}
+      INFLUX_SENSOR_DB: ${{ secrets.INFLUX_SENSOR_DB }}
+      INFLUX_ALERTS_DB: ${{ secrets.INFLUX_ALERTS_DB }}
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -16,19 +23,13 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 22.16.0
+          node-version: 22
 
       - name: Install dependencies
         run: npm install
 
       - name: Build project
         run: npm run build
-        env:
-          INFLUX_URL: ${{ secrets.INFLUX_URL }}
-          INFLUX_SENSOR_TOKEN: ${{ secrets.INFLUX_SENSOR_TOKEN }}
-          INFLUX_ALERTS_TOKEN: ${{ secrets.INFLUX_ALERTS_TOKEN }}
-          INFLUX_SENSOR_DB: ${{ secrets.INFLUX_SENSOR_DB }}}
-          INFLUX_ALERTS_DB: ${{ secrets.INFLUX_ALERTS_DB }}}
 
       - name: Run tests
         run: npm test || echo "No tests yet"
