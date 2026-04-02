@@ -23,6 +23,10 @@ jobs:
 
       - name: Build project
         run: npm run build
+        env:
+          INFLUX_URL: ${{ secrets.INFLUX_URL }}
+          INFLUX_SENSOR_TOKEN: ${{ secrets.INFLUX_SENSOR_TOKEN }}
+          INFLUX_ALERTS_TOKEN: ${{ secrets.INFLUX_ALERTS_TOKEN }}
 
       - name: Run tests
         run: npm test || echo "No tests yet"
