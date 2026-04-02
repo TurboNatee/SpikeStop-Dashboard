@@ -28,6 +28,7 @@ jobs:
           INFLUX_SENSOR_TOKEN: ${{ secrets.INFLUX_SENSOR_TOKEN }}
           INFLUX_ALERTS_TOKEN: ${{ secrets.INFLUX_ALERTS_TOKEN }}
           INFLUX_SENSOR_DB: ${{ secrets.INFLUX_SENSOR_DB }}}
+          INFLUX_ALERTS_DB: ${{ secrets.INFLUX_ALERTS_DB }}}
 
       - name: Run tests
         run: npm test || echo "No tests yet"
