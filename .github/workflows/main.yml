@@ -25,6 +25,14 @@ jobs:
         with:
           node-version: 22
 
+      - name: Cache Node modules
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
       - name: Install dependencies
         run: npm install
 
@@ -32,4 +40,4 @@ jobs:
         run: npm run build
 
       - name: Run tests
-        run: npm test || echo "No tests yet"
+        run: npm run test
