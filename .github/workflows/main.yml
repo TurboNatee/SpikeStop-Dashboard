@@ -86,4 +86,4 @@ jobs:
             docker pull turbonatee/spikestop-dashboard:latest
             docker stop spikestop-dashboard || true
             docker rm spikestop-dashboard || true
-            docker run -d -p 3000:3000 --env-file /home/ubuntu/.env spikestop-dashboard
+            docker run -d -p 3000:3000 --env-file /home/ubuntu/.env turbonatee/spikestop-dashboard:latest
