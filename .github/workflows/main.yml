@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: SpikeStop CI/CD Pipeline
 
 on:
   push:
@@ -8,7 +8,6 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-
     env:
       INFLUX_URL: ${{ secrets.INFLUX_URL }}
       INFLUX_SENSOR_TOKEN: ${{ secrets.INFLUX_SENSOR_TOKEN }}
@@ -17,10 +16,12 @@ jobs:
       INFLUX_ALERTS_DB: ${{ secrets.INFLUX_ALERTS_DB }}
 
     steps:
-      - name: Checkout repo
+
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Node
+
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -39,6 +40,7 @@ jobs:
       - name: Build project
         run: npm run build
 
+
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
@@ -48,9 +50,11 @@ jobs:
       - name: Build Docker image
         run: docker build -t spikestop-dashboard .
 
-      - name: Push Docker image
+      - name: Tag Docker image
         run: docker tag spikestop-dashboard turbonatee/spikestop-dashboard:latest
-      - run: docker push turbonatee/spikestop-dashboard:latest
+
+      - name: Push Docker image
+        run: docker push turbonatee/spikestop-dashboard:latest
 
       - name: SSH & deploy on EC2
         uses: appleboy/ssh-action@v0.1.7
