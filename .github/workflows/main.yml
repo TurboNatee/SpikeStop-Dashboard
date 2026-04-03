@@ -55,14 +55,19 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            export NVM_DIR="$HOME/.nvm"
+            source $NVM_DIR/nvm.sh
+          
+            nvm use 22
+          
             export INFLUX_URL=${{ secrets.INFLUX_URL }}
             export INFLUX_SENSOR_TOKEN=${{ secrets.INFLUX_SENSOR_TOKEN }}
             export INFLUX_ALERTS_TOKEN=${{ secrets.INFLUX_ALERTS_TOKEN }}
             export INFLUX_SENSOR_DB=${{ secrets.INFLUX_SENSOR_DB }}
             export INFLUX_ALERTS_DB=${{ secrets.INFLUX_ALERTS_DB }}
-
+          
             cd SpikeStop-Dashboard
             git pull origin main
             npm install
             npm run build
-            pm2 restart spikestop
+            pm2 restart spikestop || pm2 start npm --name "spikestop" -- start
