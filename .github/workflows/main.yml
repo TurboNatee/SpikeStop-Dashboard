@@ -6,8 +6,9 @@ on:
   pull_request:
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
+
     env:
       INFLUX_URL: ${{ secrets.INFLUX_URL }}
       INFLUX_SENSOR_TOKEN: ${{ secrets.INFLUX_SENSOR_TOKEN }}
@@ -16,12 +17,10 @@ jobs:
       INFLUX_ALERTS_DB: ${{ secrets.INFLUX_ALERTS_DB }}
 
     steps:
-
-      - name: Checkout repository
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-
-      - name: Setup Node.js
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -31,8 +30,6 @@ jobs:
         with:
           path: ~/.npm
           key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
 
       - name: Install dependencies
         run: npm install
@@ -40,6 +37,16 @@ jobs:
       - name: Build project
         run: npm run build
 
+      - name: Run tests
+        run: npm run test
+
+  docker:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
@@ -56,7 +63,13 @@ jobs:
       - name: Push Docker image
         run: docker push turbonatee/spikestop-dashboard:latest
 
-      - name: SSH & deploy on EC2
+  deploy:
+    needs: docker
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Deploy container to EC2
         uses: appleboy/ssh-action@v0.1.7
         with:
           host: ${{ secrets.EC2_IP }}
