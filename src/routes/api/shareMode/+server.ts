@@ -1,6 +1,6 @@
 import { InfluxDBClient, Point } from '@influxdata/influxdb3-client';
 import { json } from '@sveltejs/kit';
-import { INFLUX_URL, INFLUX_ALERTS_TOKEN, INFLUX_ALERTS_DB } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 
 const SHARE_MODE_CODE = 991338;
 
@@ -18,9 +18,17 @@ export async function POST({ request }) {
     return json({ error: 'Missing node' }, { status: 400 });
   }
 
+  const influxUrl = env.INFLUX_URL;
+  const influxAlertsToken = env.INFLUX_ALERTS_TOKEN;
+  const influxAlertsDb = env.INFLUX_ALERTS_DB;
+
+  if (!influxUrl || !influxAlertsToken || !influxAlertsDb) {
+    return json({ error: 'Server is missing InfluxDB configuration' }, { status: 500 });
+  }
+
   const client = new InfluxDBClient({
-    host: INFLUX_URL,
-    token: INFLUX_ALERTS_TOKEN
+    host: influxUrl,
+    token: influxAlertsToken
   });
 
   try {
@@ -29,7 +37,7 @@ export async function POST({ request }) {
       .setIntegerField('share_mode_code', SHARE_MODE_CODE)
       .setTimestamp(new Date());
 
-    await client.write([point], INFLUX_ALERTS_DB);
+    await client.write([point], influxAlertsDb);
 
     return json({ ok: true, node });
   } catch (error) {
