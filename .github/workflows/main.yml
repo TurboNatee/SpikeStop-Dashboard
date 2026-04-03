@@ -41,3 +41,28 @@ jobs:
 
       - name: Run tests
         run: npm run test
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            export INFLUX_URL=${{ secrets.INFLUX_URL }}
+            export INFLUX_SENSOR_TOKEN=${{ secrets.INFLUX_SENSOR_TOKEN }}
+            export INFLUX_ALERTS_TOKEN=${{ secrets.INFLUX_ALERTS_TOKEN }}
+            export INFLUX_SENSOR_DB=${{ secrets.INFLUX_SENSOR_DB }}
+            export INFLUX_ALERTS_DB=${{ secrets.INFLUX_ALERTS_DB }}
+
+            cd SpikeStop-Dashboard
+            git pull origin main
+            npm install
+            npm run build
+            pm2 restart spikestop
