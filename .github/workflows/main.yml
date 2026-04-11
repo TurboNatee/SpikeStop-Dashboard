@@ -69,7 +69,7 @@ jobs:
     if: github.ref == 'refs/heads/main'
 
     steps:
-      - name: Deploy container to EC2
+      - name: Deploy container to EC2 Host A
         uses: appleboy/ssh-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -87,3 +87,26 @@ jobs:
             docker stop spikestop-dashboard || true
             docker rm spikestop-dashboard || true
             docker run -d -p 3000:3000 --env-file /home/ubuntu/.env turbonatee/spikestop-dashboard:latest
+            
+      - name: Deploy container to EC2 Host B
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST2 }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cat <<EOF > /home/ubuntu/.env
+            INFLUX_URL=${{ secrets.INFLUX_URL }}
+            INFLUX_SENSOR_TOKEN=${{ secrets.INFLUX_SENSOR_TOKEN }}
+            INFLUX_ALERTS_TOKEN=${{ secrets.INFLUX_ALERTS_TOKEN }}
+            INFLUX_SENSOR_DB=${{ secrets.INFLUX_SENSOR_DB }}
+            INFLUX_ALERTS_DB=${{ secrets.INFLUX_ALERTS_DB }}
+            EOF
+            docker pull turbonatee/spikestop-dashboard:latest
+            docker stop spikestop-dashboard || true
+            docker rm spikestop-dashboard || true
+            docker run -d -p 3000:3000 --env-file /home/ubuntu/.env turbonatee/spikestop-dashboard:latest
+
+
+
+            
