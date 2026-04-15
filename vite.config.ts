@@ -5,11 +5,11 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
   plugins: [sveltekit(), tailwindcss()],
   server: {
-    allowedHosts: true,
+    allowedHosts: ['spikestop-ecs-alb-68265514.eu-north-1.elb.amazonaws.com'],
     host: true
   },
   preview: {
-    allowedHosts: true,
+    allowedHosts: ['spikestop-ecs-alb-68265514.eu-north-1.elb.amazonaws.com'],
     host: true
   }
 });
