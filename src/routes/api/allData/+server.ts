@@ -95,7 +95,7 @@ export async function GET() {
   }
 }
 
-// Fetch last 10 readings per node and compute variance
+
 async function fetchSensorData(config: InfluxConfig): Promise<ReducedSensorData> {
   const query = `
     SELECT node, sensor_value, temperature, battery_v, battery_pct, ir_signal_uv, ir_signal_mv, ir_broken, rssi, hops, time
@@ -176,7 +176,7 @@ async function fetchSensorData(config: InfluxConfig): Promise<ReducedSensorData>
   return reduced;
 }
 
-// Check variance & write alerts (true if Δ >= 65, false otherwise)
+
 async function checkAndWriteAlerts(sensorData: ReducedSensorData, config: InfluxConfig): Promise<ActiveAlerts> {
   const alertClient = new InfluxDBClient({
     host: config.influxUrl,

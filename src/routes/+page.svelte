@@ -173,20 +173,20 @@
 
 <div class="min-h-screen bg-gradient-to-br from-sky-100 via-blue-200 to-indigo-300 flex flex-col items-center px-6 py-10">
 
-  <!-- Title -->
+  
   <div class="text-center mb-8">
     <h1 class="text-4xl font-extrabold bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 bg-clip-text text-transparent drop-shadow-md">
-      SpikeStop Dashboard
+      SpikeStop Dashboard - This is a test
     </h1>
     <p class="text-gray-600 mt-2 text-sm italic">Live IoT sensor feed with alert detection</p>
   </div>
 
-  <!-- Timestamp -->
+  
   {#if !loading}
     <p class="text-gray-500 text-sm mb-6">Last updated: {new Date(lastUpdate).toLocaleTimeString()}</p>
   {/if}
 
-  <!-- Loader -->
+  
   {#if loading}
     <div class="flex items-center justify-center h-64">
       <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
@@ -194,7 +194,7 @@
   {:else if Object.keys(nodeData).length === 0}
     <p class="text-gray-600 text-center mt-12">No active cups detected</p>
   {:else}
-    <!-- Cards -->
+    
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 w-full max-w-7xl">
       {#each Object.keys(nodeData) as mac}
         <div
@@ -203,7 +203,7 @@
           class:ring-4={activeAlerts[mac]?.active}
           class:ring-red-500={activeAlerts[mac]?.active}
         >
-          <!-- Cup graphic -->
+          
           <div class="flex justify-center mb-4">
             <div
               class="relative w-24 h-36 bg-gradient-to-t from-blue-300 to-blue-100 rounded-b-full border-4 border-blue-200 overflow-hidden shadow-inner">
@@ -217,10 +217,10 @@
             </div>
           </div>
 
-          <!-- MAC -->
+          
           <h2 class="text-center font-semibold text-gray-700 text-sm mb-2 truncate">{mac}</h2>
 
-          <!-- Readings -->
+          
           <div class="grid grid-cols-2 gap-3 text-center">
             <div class="bg-blue-50/60 rounded-xl py-2">
               <p class="text-xs text-gray-500"> Temp</p>
@@ -260,7 +260,7 @@
             </div>
           </div>
 
-          <!-- Bottom Info -->
+          
           <div class="mt-4 flex justify-between text-xs text-gray-600">
             <span> {nodeData[mac].rssi} dB</span>
             <span> {nodeData[mac].hops} hops</span>
@@ -282,7 +282,7 @@
             {sharingMode[mac] ? 'Sending...' : 'Share Mode'}
           </button>
 
-          <!-- Active Alert Glow styling --> 
+          
 
           {#if activeAlerts[mac]?.active}
             <div class="absolute inset-0 bg-red-500/10 animate-pulse rounded-3xl pointer-events-none"></div>
